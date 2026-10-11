@@ -5,6 +5,7 @@ true route faint grey — or the full green route when it ARRIVES. OSM tiles via
 """
 import json
 import os
+import time
 
 from PIL import ImageDraw, ImageFont
 from staticmap import StaticMap, Line, CircleMarker
@@ -55,13 +56,44 @@ def render(trip, round_no, path):
     print("wrote", path)
 
 
+def build_video(frames):
+    """Stitch the per-trip PNGs into a shareable MP4 + GIF with ffmpeg (hold on the arrival)."""
+    import shutil
+    import subprocess
+    if not shutil.which("ffmpeg"):
+        print("ffmpeg not found — skipping video"); return
+    listing = f"{HERE}/out/frames/frames.txt"
+    with open(listing, "w") as f:
+        for i, fr in enumerate(frames):
+            f.write(f"file '{os.path.basename(fr)}'\n")
+            f.write(f"duration {3.0 if i == len(frames) - 1 else 1.6}\n")
+        f.write(f"file '{os.path.basename(frames[-1])}'\n")       # concat needs the last frame twice
+    mp4 = f"{HERE}/out/learning.mp4"
+    subprocess.run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", "frames.txt",
+                    "-vf", "scale=980:680,format=yuv420p", "-r", "25", "learning.mp4"],
+                   cwd=f"{HERE}/out/frames", check=True, capture_output=True)
+    os.replace(f"{HERE}/out/frames/learning.mp4", mp4)
+    gif = f"{HERE}/out/learning.gif"
+    subprocess.run(["ffmpeg", "-y", "-i", mp4, "-vf",
+                    "fps=12,scale=760:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
+                    gif], check=True, capture_output=True)
+    print("wrote", mp4, "and", gif)
+
+
 def main():
     hist = json.load(open(f"{HERE}/out/history.json"))["mnemo"]
-    os.makedirs(f"{HERE}/out", exist_ok=True)
-    # a telling sequence: first trip, a mid trip, and the first arrival
-    picks = [0, 2, next((i for i, t in enumerate(hist) if t["reached"]), len(hist) - 1)]
-    for p in sorted(set(picks)):
+    os.makedirs(f"{HERE}/out/frames", exist_ok=True)
+    frames = []
+    for p, trip in enumerate(hist):                              # every trip → one video frame
+        fr = f"{HERE}/out/frames/frame_{p+1:02d}.png"
+        render(trip, p + 1, fr)
+        frames.append(fr)
+        time.sleep(1.0)                                          # be polite to the OSM tile server
+    # stills for the README: first trip, a mid trip, and the first arrival
+    arrive = next((i for i, t in enumerate(hist) if t["reached"]), len(hist) - 1)
+    for p in sorted({0, min(2, len(hist) - 1), arrive}):
         render(hist[p], p + 1, f"{HERE}/out/trip_{p+1:02d}.png")
+    build_video(frames)
 
 
 if __name__ == "__main__":

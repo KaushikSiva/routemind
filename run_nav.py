@@ -54,9 +54,14 @@ def main():
     args = ap.parse_args()
 
     bank = make_bank()
-    print(f"{len(DECISIONS)} junctions | {len(bank)} turn-memories "
-          f"({sum(b['truth'] for b in bank)} correct / {sum(not b['truth'] for b in bank)} noise)\n")
-    bank_vecs = embed([b["document"] for b in bank])
+    n_distract = sum(b.get("distractor", False) for b in bank)
+    print(f"{len(DECISIONS)} real junctions on the route | {len(bank):,} turn-memories in the store "
+          f"({sum(b['truth'] for b in bank)} correct / {len(bank) - sum(b['truth'] for b in bank):,} noise, "
+          f"of which {n_distract:,} are other-junction distractors)\n"
+          f"Atlas Vector Search must find each junction's turn inside all {len(bank):,} vectors.\n")
+    uniq = sorted({b["document"] for b in bank})            # embed each distinct junction text once
+    vmap = dict(zip(uniq, embed(uniq)))
+    bank_vecs = [vmap[b["document"]] for b in bank]
     jvecs = embed([junction_doc(i, d) for i, d in enumerate(DECISIONS)])
 
     store_factory = LocalStore
