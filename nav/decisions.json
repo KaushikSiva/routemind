@@ -1,0 +1,65 @@
+[
+ {
+  "on": "Railway Border Road",
+  "loc": [
+   80.230279,
+   13.05173
+  ],
+  "action": "right",
+  "type": "depart"
+ },
+ {
+  "on": "Station View Road",
+  "loc": [
+   80.230304,
+   13.051874
+  ],
+  "action": "left",
+  "type": "turn"
+ },
+ {
+  "on": "UI Colony 1st Main Road",
+  "loc": [
+   80.227554,
+   13.052347
+  ],
+  "action": "left",
+  "type": "turn"
+ },
+ {
+  "on": "Viswanathapuram Main Road",
+  "loc": [
+   80.227245,
+   13.050857
+  ],
+  "action": "straight",
+  "type": "new name"
+ },
+ {
+  "on": "Rangarajapuram Main Road",
+  "loc": [
+   80.226224,
+   13.046706
+  ],
+  "action": "right",
+  "type": "turn"
+ },
+ {
+  "on": "Rathnammal Street",
+  "loc": [
+   80.221515,
+   13.0479
+  ],
+  "action": "straight",
+  "type": "new name"
+ },
+ {
+  "on": "Rathnammal Street",
+  "loc": [
+   80.219558,
+   13.048139
+  ],
+  "action": "left",
+  "type": "arrive"
+ }
+]
