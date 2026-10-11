@@ -15,9 +15,10 @@ load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 
 from memory import embed, LocalStore, AtlasStore, Memory
 from nav_tasks import DECISIONS, junction_doc, make_bank, ROUTE, START_LABEL, GOAL_LABEL, CITY
+from raindrop import Raindrop
 
 
-def run(use_usefulness, rounds, store_factory, bank, bank_vecs, jvecs):
+def run(use_usefulness, rounds, store_factory, bank, bank_vecs, jvecs, rd=None):
     store = store_factory()
     store.clear()
     for b, v in zip(bank, bank_vecs):
@@ -26,6 +27,7 @@ def run(use_usefulness, rounds, store_factory, bank, bank_vecs, jvecs):
     if isinstance(store, AtlasStore):
         time.sleep(10)
     mem = Memory(store, alpha=3.0, use_usefulness=use_usefulness)
+    mode = "mnemo" if use_usefulness else "rag"
     history = []
     for r in range(rounds):
         correct_turns, first_fail = 0, None
@@ -33,6 +35,9 @@ def run(use_usefulness, rounds, store_factory, bank, bank_vecs, jvecs):
             cands = mem.retrieve(jvecs[i], k=1, where={"junction": i})
             chosen = cands[0]["action"] if cands else None
             ok = chosen == d["action"]
+            if rd:                                      # stream the recall to Raindrop
+                rd.recall(ROUTE, CITY, mode, r + 1, i, d["on"], chosen, d["action"], ok,
+                          mem._useful(cands[0]) if cands else 0.5, len(bank))
             if use_usefulness and cands:
                 mem.record(cands, ok)                   # learn: did this remembered turn help?
             if ok:
@@ -42,6 +47,8 @@ def run(use_usefulness, rounds, store_factory, bank, bank_vecs, jvecs):
         if use_usefulness:
             mem.prune(min_uses=1, min_usefulness=0.4)   # forget a turn the moment it misleads once
         reached = first_fail is None
+        if rd:
+            rd.trip(ROUTE, mode, r + 1, reached, correct_turns, len(DECISIONS))
         history.append({"reached": reached, "correct_turns": correct_turns, "first_fail": first_fail})
     return history
 
@@ -71,8 +78,13 @@ def main():
         uri = os.environ["MONGODB_URI"]
         store_factory = lambda: AtlasStore(uri)         # noqa: E731
 
-    mnemo = run(True, args.rounds, store_factory, bank, bank_vecs, jvecs)
-    rag = run(False, args.rounds, store_factory, bank, bank_vecs, jvecs)
+    rd = Raindrop()
+    if rd.enabled:
+        print("Raindrop observability: ON (streaming recalls to raindrop.ai)\n")
+    mnemo = run(True, args.rounds, store_factory, bank, bank_vecs, jvecs, rd)
+    rag = run(False, args.rounds, store_factory, bank, bank_vecs, jvecs, rd)
+    if rd.enabled:
+        print(f"\nRaindrop: sent {rd.flush()} events")
 
     N = len(DECISIONS)
     print(" round | Mnemo turns right | reached? || RAG turns right | reached?")
