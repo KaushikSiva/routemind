@@ -97,6 +97,20 @@ def srt_ts(t):
     return f"{h:02d}:{m:02d}:{s:06.3f}".replace(".", ",")
 
 
+def chunk_caption(text, max_words=6):
+    """Split narration into short one-line caption phrases, breaking at punctuation when possible."""
+    words = text.replace(",", ",|").replace(".", ".|").split()
+    out, cur = [], []
+    for w in words:
+        cur.append(w.replace("|", ""))
+        brk = w.endswith("|") or w.endswith(",|") or w.endswith(".|") or w.rstrip("|").endswith((",", "."))
+        if len(cur) >= max_words or (brk and len(cur) >= 3):
+            out.append(" ".join(cur).strip()); cur = []
+    if cur:
+        out.append(" ".join(cur).strip())
+    return [c for c in out if c]
+
+
 # scene = (card_blocks_or_"learn", narration+caption text, image)
 SCENES = [
     # 1 - the problem
@@ -158,7 +172,15 @@ def main():
                         "-c:v", "copy", "-c:a", "aac", "-ar", "48000", "-b:a", "160k", out],
                        check=True, capture_output=True)
         scene_videos.append(out)
-        srt.append((t0 + 0.25, t0 + sd, narr)); t0 += sd
+        # distribute short caption phrases across the scene, proportional to word count
+        chunks = chunk_caption(narr)
+        cstart, cend = t0 + 0.25, t0 + sd - 0.1
+        tw = sum(len(c.split()) for c in chunks) or 1
+        cs = cstart
+        for c in chunks:
+            ce = cs + (cend - cstart) * (len(c.split()) / tw)
+            srt.append((cs, ce, c)); cs = ce
+        t0 += sd
 
     # subtitles file
     srtp = f"{TMP}/cap.srt"
@@ -178,8 +200,8 @@ def main():
 
     # burn captions
     out = os.path.expanduser("~/Desktop/RouteMind_Demo.mp4")
-    style = ("FontName=Arial,FontSize=19,Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,"
-             "BorderStyle=1,Outline=3,Shadow=1,Alignment=2,MarginV=32,MarginL=70,MarginR=70")
+    style = ("FontName=Arial,FontSize=15,Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,"
+             "BorderStyle=1,Outline=2,Shadow=1,Alignment=2,MarginV=22,MarginL=40,MarginR=40")
     subprocess.run(["ffmpeg", "-y", "-i", concat,
                     "-vf", f"subtitles={srtp}:force_style='{style}'",
                     "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "copy",
