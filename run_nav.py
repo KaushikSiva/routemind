@@ -30,7 +30,7 @@ def run(use_usefulness, rounds, store_factory, bank, bank_vecs, jvecs):
     for r in range(rounds):
         correct_turns, first_fail = 0, None
         for i, d in enumerate(DECISIONS):
-            cands = mem.retrieve(jvecs[i], k=1)
+            cands = mem.retrieve(jvecs[i], k=1, where={"junction": i})
             chosen = cands[0]["action"] if cands else None
             ok = chosen == d["action"]
             if use_usefulness and cands:
@@ -39,6 +39,8 @@ def run(use_usefulness, rounds, store_factory, bank, bank_vecs, jvecs):
                 correct_turns += 1
             elif first_fail is None:
                 first_fail = i                          # where it would have left the route
+        if use_usefulness:
+            mem.prune(min_uses=1, min_usefulness=0.4)   # forget a turn the moment it misleads once
         reached = first_fail is None
         history.append({"reached": reached, "correct_turns": correct_turns, "first_fail": first_fail})
     return history

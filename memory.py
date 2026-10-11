@@ -103,10 +103,12 @@ class Memory:
         s = self.stats.get(self._key(d))
         return s["usefulness"] if s else d.get("usefulness", 0.5)
 
-    def retrieve(self, qvec, k=3, pool=24):
+    def retrieve(self, qvec, k=3, pool=50, where=None):
         cands = self.store.search(qvec, pool)
         scored = []
         for doc, sim in cands:
+            if where and any(doc.get(kk) != vv for kk, vv in where.items()):
+                continue                                # scope recall (e.g. to this junction)
             u = self._useful(doc)
             score = sim * (1 + self.alpha * u) if self.use_usefulness else sim
             scored.append((score, doc))
