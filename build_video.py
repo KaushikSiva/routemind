@@ -12,11 +12,10 @@ import urllib.request
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
 
-load_dotenv(os.path.expanduser("~/workspace/cutroom/.env"))
-EL_KEY = os.environ["ELEVENLABS_API_KEY"]
-EL_VOICE = os.environ.get("CUTROOM_ELEVEN_VOICE", "cjVigY5qzO86Huf0OWal")
-
 HERE = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(HERE, ".env"))                        # OPENAI_API_KEY
+load_dotenv(os.path.expanduser("~/workspace/cutroom/.env"))    # Cutroom ElevenLabs (if valid)
+EL_VOICE = os.environ.get("CUTROOM_ELEVEN_VOICE", "cjVigY5qzO86Huf0OWal")
 W, H = 980, 680
 BG = (10, 13, 18)
 MN, RG, ATLAS, BLUE, MUT, FG = (31, 201, 138), (228, 102, 31), (0, 199, 103), (90, 150, 250), (150, 160, 176), (234, 238, 244)
@@ -57,24 +56,32 @@ def card(path, blocks, image=None):
     return path
 
 
-EL_ENABLED = bool(os.environ.get("ROUTEMIND_ELEVEN_KEY"))     # set a valid key to use ElevenLabs
+import json
 
 
 def tts(text, path):
-    key = os.environ.get("ROUTEMIND_ELEVEN_KEY")
-    if key:                                                   # ElevenLabs if a working key is provided
-        body = {"text": text, "model_id": "eleven_turbo_v2_5",
-                "voice_settings": {"stability": 0.5, "similarity_boost": 0.8}}
+    el = os.environ.get("ROUTEMIND_ELEVEN_KEY")
+    if el:                                                    # 1) ElevenLabs if a valid key is provided
         req = urllib.request.Request(
             f"https://api.elevenlabs.io/v1/text-to-speech/{EL_VOICE}",
-            data=__import__("json").dumps(body).encode(),
-            headers={"xi-api-key": key, "Content-Type": "application/json", "Accept": "audio/mpeg"})
+            data=json.dumps({"text": text, "model_id": "eleven_turbo_v2_5",
+                             "voice_settings": {"stability": 0.5, "similarity_boost": 0.8}}).encode(),
+            headers={"xi-api-key": el, "Content-Type": "application/json", "Accept": "audio/mpeg"})
         with urllib.request.urlopen(req, timeout=60) as r, open(path, "wb") as f:
             f.write(r.read())
         return path
-    # fallback: macOS system narrator (Daniel, UK) — swap in ElevenLabs via ROUTEMIND_ELEVEN_KEY
-    aiff = path.rsplit(".", 1)[0] + ".aiff"
-    subprocess.run(["say", "-v", os.environ.get("ROUTEMIND_SAY_VOICE", "Daniel"), "-r", "178", "-o", aiff, text], check=True)
+    oa = os.environ.get("OPENAI_API_KEY")
+    if oa:                                                    # 2) OpenAI TTS-HD (onyx), high quality
+        req = urllib.request.Request(
+            "https://api.openai.com/v1/audio/speech",
+            data=json.dumps({"model": "tts-1-hd", "voice": os.environ.get("ROUTEMIND_TTS_VOICE", "onyx"),
+                             "input": text, "response_format": "mp3", "speed": 1.0}).encode(),
+            headers={"Authorization": f"Bearer {oa}", "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=60) as r, open(path, "wb") as f:
+            f.write(r.read())
+        return path
+    aiff = path.rsplit(".", 1)[0] + ".aiff"                   # 3) last resort: macOS system voice
+    subprocess.run(["say", "-v", "Daniel", "-r", "178", "-o", aiff, text], check=True)
     subprocess.run(["ffmpeg", "-y", "-i", aiff, path], check=True, capture_output=True)
     return path
 
@@ -92,24 +99,34 @@ def srt_ts(t):
 
 # scene = (card_blocks_or_"learn", narration+caption text, image)
 SCENES = [
-    ([("RouteMind", 86, FG, True), ("  ", 10, FG, False),
-      ("MongoDB Atlas Vector Search  ·  Voyage AI", 26, ATLAS, True)],
-     "This is RouteMind. Agent memory that learns a real route by forgetting its own wrong turns, built on MongoDB Atlas.", None),
-    ([("Shack 15  →  Ocean Beach", 48, FG, True), ("San Francisco", 28, MUT, False),
-      ("  ", 10, FG, False), ("1,081 memories in Atlas", 30, MN, True)],
-     "A car starts at Shack 15 and has to reach Ocean Beach, with over a thousand memories in Atlas, most of them wrong.", None),
-    ("learn",
-     "Every trip it recalls a turn, gets corrected, and forgets the turns that mislead it. The route locks in, trip by trip.", None),
-    ([("Arrives by trip 5", 40, MN, True)],
-     "By trip five, it arrives. The same memory with learning switched off never leaves the first block.",
-     f"{HERE}/out/sf/curve.png"),
-    ([("similarity  1.000", 54, FG, True), ("  ", 8, FG, False),
-      ("every candidate turn scores the same", 26, MUT, False),
+    # 1 - the problem
+    ([("RouteMind", 78, FG, True)],
+     "An agent is only as good as its memory. And today, that memory is frozen.", None),
+    ([("Agent memory today is", 40, FG, True), ("frozen", 70, RG, True)],
+     "It retrieves by similarity, and never learns from what happened next. So when a recall leads the agent wrong, nothing changes, and it makes the same mistake again, and again.", None),
+    # 2 - what we built
+    ([("A memory that", 40, FG, True), ("improves itself", 56, MN, True)],
+     "We built RouteMind to fix that. A memory that improves itself. After every decision it scores whether the memory it recalled actually helped, keeps the useful ones, and deletes the ones that mislead. All of it on MongoDB Atlas Vector Search, with embeddings from Voyage AI.", None),
+    # 3 - the key insight
+    ([("similarity  1.000", 56, FG, True), ("  ", 8, FG, False),
+      ("every candidate scores the same", 26, MUT, False),
       ("usefulness, learned in Atlas, picks the turn", 28, MN, True)],
-     "At each junction, every candidate turn scores the same similarity, so vector search alone cannot choose. Usefulness, learned in Atlas, picks the turn.", None),
-    ([("It got lost in San Francisco,", 38, FG, True), ("then it learned the way.", 38, MN, True),
-      ("  ", 12, FG, False), ("MongoDB Atlas · Voyage AI · Raindrop · Modelence · ElevenLabs", 20, MUT, False)],
-     "It got lost in San Francisco, then it learned the way. RouteMind, on MongoDB Atlas and Voyage AI.", None),
+     "Here is why this is hard. At a junction, every possible turn scores the same vector similarity. Similarity alone cannot tell the right turn from the wrong ones. The usefulness we learn and store in Atlas is what picks the turn.", None),
+    # 4 - the demo setup
+    ([("Shack 15  →  Ocean Beach", 48, FG, True), ("San Francisco", 28, MUT, False),
+      ("  ", 10, FG, False), ("1,081 memories in Atlas, most of them wrong", 25, MN, True)],
+     "To prove it, we gave it a real San Francisco drive, from Shack 15 to Ocean Beach, with over a thousand memories in Atlas, most of them wrong.", None),
+    # 5 - the demo
+    ("learn",
+     "Now watch it learn. Each trip it recalls a turn, gets corrected, and forgets the turns that misled it, and the route locks in, trip by trip.", None),
+    # 6 - the result
+    ([("Arrives by trip 5", 42, MN, True)],
+     "By trip five, it arrives. The same memory, with learning switched off, never leaves the first block.",
+     f"{HERE}/out/sf/curve.png"),
+    # 7 - close
+    ([("Self-improving agent memory", 34, FG, True), ("  ", 8, FG, False),
+      ("MongoDB Atlas · Voyage AI · Raindrop · Modelence · ElevenLabs", 20, MUT, False)],
+     "RouteMind. Self-improving agent memory, on MongoDB Atlas and Voyage AI.", None),
 ]
 
 
