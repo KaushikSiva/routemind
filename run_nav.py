@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 
 from memory import embed, LocalStore, AtlasStore, Memory
-from nav_tasks import DECISIONS, junction_doc, make_bank
+from nav_tasks import DECISIONS, junction_doc, make_bank, ROUTE, START_LABEL, GOAL_LABEL, CITY
 
 
 def run(use_usefulness, rounds, store_factory, bank, bank_vecs, jvecs):
@@ -50,11 +50,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rounds", type=int, default=10)
     ap.add_argument("--atlas", action="store_true")
-    ap.add_argument("--save", default="out/history.json")
+    ap.add_argument("--save", default=None)
     args = ap.parse_args()
+    save = args.save or f"out/{ROUTE}/history.json"
 
     bank = make_bank()
     n_distract = sum(b.get("distractor", False) for b in bank)
+    print(f"[{ROUTE}] {START_LABEL} -> {GOAL_LABEL} ({CITY})")
     print(f"{len(DECISIONS)} real junctions on the route | {len(bank):,} turn-memories in the store "
           f"({sum(b['truth'] for b in bank)} correct / {len(bank) - sum(b['truth'] for b in bank):,} noise, "
           f"of which {n_distract:,} are other-junction distractors)\n"
@@ -81,9 +83,9 @@ def main():
           f"({mnemo[-1]['correct_turns']}/{N} turns) | RAG: {'ARRIVES' if rag[-1]['reached'] else 'still lost'} "
           f"({rag[-1]['correct_turns']}/{N} turns)")
 
-    os.makedirs("out", exist_ok=True)
-    json.dump({"mnemo": mnemo, "rag": rag, "n": N}, open(args.save, "w"), indent=1)
-    print(f" wrote {args.save}")
+    os.makedirs(os.path.dirname(save), exist_ok=True)
+    json.dump({"mnemo": mnemo, "rag": rag, "n": N}, open(save, "w"), indent=1)
+    print(f" wrote {save}")
 
 
 if __name__ == "__main__":

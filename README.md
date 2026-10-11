@@ -1,12 +1,12 @@
 <h1 align="center">🚗 RouteMind</h1>
 
-<p align="center"><b>A car that teaches itself a route on real roads — by learning from its own wrong turns.</b></p>
+<p align="center"><b>A car that teaches itself a real San Francisco drive — by learning from its own wrong turns.</b></p>
 
 <p align="center">
-  Drive from <b>Kodambakkam railway station</b> to <b>Jains Antariksha</b> (Chennai). The streets and
-  turns are real (OpenStreetMap). The car starts with a head full of <i>wrong</i> directions and,
-  trip by trip, learns which turns actually get it there — recursive self-improvement you can watch
-  on the map.
+  Start at <b>Shack 15</b> (the Ferry Building) and drive to <b>Ocean Beach</b>. The streets and turns
+  are real (OpenStreetMap). The car begins with a head full of <i>wrong</i> directions buried in a
+  store of <b>1,000+ memories</b> and, trip by trip, learns which turns actually get it there —
+  recursive self-improvement you can watch on the map, on <b>MongoDB Atlas Vector Search</b>.
 </p>
 
 ---
@@ -14,70 +14,103 @@
 ## Watch it learn
 
 <p align="center">
-  <img src="docs/learning.gif" width="760" alt="RouteMind learning the Kodambakkam → Jains Antariksha route trip by trip"><br>
-  <i>Every trip the green path pushes further down the real route — until it arrives. (<a href="docs/learning.mp4">mp4</a>)</i>
+  <img src="docs/learning.gif" width="760" alt="RouteMind learning the Shack 15 → Ocean Beach route trip by trip"><br>
+  <i>Every trip the green path pushes further across San Francisco — until it arrives. (<a href="docs/learning.mp4">mp4</a>)</i>
 </p>
 
-| Trip 1 — lost at the 1st turn | Trip 3 — most of the way | Trip 7 — arrives |
+<p align="center"><img src="docs/curve.png" width="720" alt="learning curve: RouteMind arrives by trip 4, RAG stays flat"></p>
+
+| Trip 1 — lost early | Trip 3 — most of the way | Trip 4 — arrives |
 |---|---|---|
-| ![t1](docs/trip_01.png) | ![t3](docs/trip_03.png) | ![t7](docs/trip_07.png) |
+| ![lost](docs/trip_lost.png) | ![mid](docs/trip_mid.png) | ![arrived](docs/trip_arrived.png) |
 
-Run on **MongoDB Atlas Vector Search over 1,026 turn-memories** (18 correct, 1,008 noise — of which
-960 are decoy turns from 160 other Chennai junctions the search has to sift through):
+Run on **MongoDB Atlas Vector Search over 1,081 turn-memories** (33 correct, 1,048 noise — of which
+960 are decoy turns from 160 other San Francisco junctions the search has to sift through):
 
 ```
- trip | turns right | result            || RAG (frozen memory)
-   1  |    2/6      | lost @ junction 2  ||  2/6  lost @ junction 1
-   3  |    4/6      | lost @ junction 4  ||  2/6  lost @ junction 1
-   5  |    5/6      | lost @ junction 5  ||  2/6  lost @ junction 1
-   7  |    6/6      | ARRIVES ✅          ||  2/6  still lost
+ trip | turns right | result              || RAG (frozen memory)
+   1  |   5/11      | lost @ junction 1    ||  6/11  lost @ junction 0
+   2  |   9/11      | lost @ junction 4    ||  6/11  lost @ junction 0
+   3  |  10/11      | lost @ junction 5    ||  6/11  lost @ junction 0
+   4  |  11/11      | ARRIVES ✅            ||  6/11  still lost
 ```
 
-Watch the failure point **walk forward down the route** — j2 → j4 → j5 → arrived — as the memory
-forgets its bad turns. The car (Mnemo) **arrives by trip 7**. A frozen-memory baseline (RAG), same
-1,026 memories but no learning, **never gets past the first turn.**
+The car (RouteMind) **arrives by trip 4**. A frozen-memory baseline (RAG) — same 1,081 memories, no
+learning — **never gets past the first turn.** That's the whole point: same vectors, the only
+difference is that RouteMind *learns which memories help and forgets the ones that mislead*.
+
+## Try it on localhost 🖥️
+
+An interactive dashboard: press **Drive** and watch the car learn the route live on the map while the
+self-improvement curve fills in. Flip **learning off** to watch plain RAG stay lost. The engine runs
+for real on every click.
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+# .env needs OPENAI_API_KEY (embeddings); MONGODB_URI only for --atlas
+
+python app.py          # → open http://localhost:5050
+```
 
 ## How it works
 
 - **Real route:** we geocode the two points and pull the actual driving route + turn-by-turn from
-  OpenStreetMap (Nominatim + OSRM) — real Kodambakkam streets.
+  OpenStreetMap (Nominatim + OSRM). Change the route with one command (see below).
 - **The task:** at each junction the car **recalls which way to turn** from memory. Its memory holds
-  the correct turn **plus noise** — wrong turns from bad past trips.
+  the correct turn **plus noise** — wrong turns from bad trips, and decoy turns from junctions all
+  over the city.
 - **It compounds:** one wrong recall sends it off-route, so a trip only completes when **every**
   junction is recalled correctly.
-- **The self-improvement:** each trip is graded (and the car is corrected, so every junction gets
+- **The self-improvement:** each trip is graded (and the car corrected, so every junction gets
   learned). The memory engine scores each remembered turn by whether recalling it helped, **keeps the
-  good ones, forgets the wrong ones** — so the route locks in over a handful of trips, with no retraining.
+  good ones, forgets the wrong ones** — so the route locks in over a handful of trips, no retraining.
 
-That feedback loop — recall → drive → learn what helped → forget the noise → **better recall next trip** —
-is the recursive self-improvement.
+That loop — recall → drive → learn what helped → forget the noise → **better recall next trip** — is
+the recursive self-improvement.
 
-> **Demoing this?** See [DEMO.md](DEMO.md) — the one-liner, the live Atlas run to show on stage, and how to record the clip.
+**Scale & MongoDB:** the store holds **1,081 vectors**. Recall is a **filtered `$vectorSearch`**
+(`memory.py` → `AtlasStore.search`) scoped to the current junction, so Atlas finds this junction's
+three candidate turns inside a whole city of memories; usefulness-weighting then picks the one that
+arrives. Learning writes back to Atlas — `update_stats` persists usefulness, `prune` **deletes** the
+turns that keep misleading.
+
+> **Demoing this?** See [DEMO.md](DEMO.md) — the one-liner, the live Atlas run, the localhost app, and how to record the clip.
 
 ## Run it
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install openai pymongo python-dotenv numpy staticmap matplotlib pillow
-# .env: OPENAI_API_KEY (embeddings), optional MONGODB_URI
-
 python run_nav.py              # learn the route (local vector store)
-python run_nav.py --atlas      # same, backed by MongoDB Atlas Vector Search (1,026 memories)
-python render_nav.py           # render per-trip maps + stitch out/learning.mp4 and out/learning.gif
+python run_nav.py --atlas      # same, backed by MongoDB Atlas Vector Search (1,081 memories)
+python render_nav.py           # per-trip maps + out/<route>/learning.mp4 and .gif
+python graph.py                # the learning-curve chart
+python app.py                  # interactive localhost dashboard (:5050)
 ```
 
-**Scale:** the store holds **1,026 vectors** — the route's own turns plus 960 decoy turns from 160
-other Chennai junctions. Recall is a **filtered `$vectorSearch`** scoped to the current junction, so
-Atlas finds this junction's three candidate turns inside the whole city's worth of memories, and the
-usefulness-weighting picks the one that actually gets the car there.
+### Any two points, any city
+
+Routes live under `nav/<slug>/`. Build a new one straight from OpenStreetMap:
+
+```bash
+python build_route.py --slug sf \
+  --start "Ferry Building, San Francisco" --goal "Ocean Beach, San Francisco" \
+  --start-label "Shack 15" --goal-label "Ocean Beach" --city "San Francisco"
+
+ROUTEMIND_ROUTE=sf python run_nav.py --atlas    # pick the route with the env var
+```
+
+Ships with two: **`sf`** (Shack 15 → Ocean Beach, default) and **`chennai`** (Kodambakkam station →
+Jains Antariksha) — proof it's the *memory* learning, not a route baked into the code.
 
 ## Credits
 
-- **OpenStreetMap** — the road network · **Nominatim** (geocoding) · **OSRM** (routing) · **staticmap** (tiles).
-- Memory engine (`memory.py`) is the **Mnemo** self-improving memory: usefulness-weighted recall + forgetting
-  on a vector store (local or **MongoDB Atlas**).
-- Everything else here (`nav_tasks.py`, `run_nav.py`, `render_nav.py`) written for this demo.
+- **OpenStreetMap** — the road network · **Nominatim** (geocoding) · **OSRM** (routing) ·
+  **staticmap** (tiles) · **Leaflet** (the live map) · **Chart.js** (the live curve).
+- Memory engine (`memory.py`) is the **Mnemo** self-improving memory: usefulness-weighted recall +
+  forgetting on a vector store (local or **MongoDB Atlas**).
+- Everything else (`nav_tasks.py`, `run_nav.py`, `render_nav.py`, `build_route.py`, `graph.py`,
+  `app.py`) written for this project.
 
 ---
 
-<p align="center"><i>It got lost, then it learned the way.</i></p>
+<p align="center"><i>It got lost in San Francisco, then it learned the way.</i></p>

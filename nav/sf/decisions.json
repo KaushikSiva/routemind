@@ -1,0 +1,110 @@
+[
+ {
+  "on": "The Embarcadero",
+  "loc": [
+   -122.393935,
+   37.795278
+  ],
+  "action": "right",
+  "type": "depart"
+ },
+ {
+  "on": "Washington Street",
+  "loc": [
+   -122.395336,
+   37.796768
+  ],
+  "action": "left",
+  "type": "turn"
+ },
+ {
+  "on": "Drumm Street",
+  "loc": [
+   -122.396909,
+   37.796397
+  ],
+  "action": "left",
+  "type": "turn"
+ },
+ {
+  "on": "California Street",
+  "loc": [
+   -122.39648,
+   37.793664
+  ],
+  "action": "right",
+  "type": "turn"
+ },
+ {
+  "on": "Park Presidio Boulevard",
+  "loc": [
+   -122.472532,
+   37.784458
+  ],
+  "action": "left",
+  "type": "turn"
+ },
+ {
+  "on": "Park Presidio Bypass Drive",
+  "loc": [
+   -122.471854,
+   37.773135
+  ],
+  "action": "straight",
+  "type": "new name"
+ },
+ {
+  "on": "Crossover Drive",
+  "loc": [
+   -122.479558,
+   37.771338
+  ],
+  "action": "straight",
+  "type": "new name"
+ },
+ {
+  "on": "Lincoln Way",
+  "loc": [
+   -122.477391,
+   37.765449
+  ],
+  "action": "right",
+  "type": "turn"
+ },
+ {
+  "on": "47th Avenue",
+  "loc": [
+   -122.507283,
+   37.764172
+  ],
+  "action": "left",
+  "type": "turn"
+ },
+ {
+  "on": "Irving Street",
+  "loc": [
+   -122.507147,
+   37.762247
+  ],
+  "action": "right",
+  "type": "turn"
+ },
+ {
+  "on": "Great Highway",
+  "loc": [
+   -122.509603,
+   37.762138
+  ],
+  "action": "left",
+  "type": "end of road"
+ },
+ {
+  "on": "Great Highway",
+  "loc": [
+   -122.508868,
+   37.756238
+  ],
+  "action": "right",
+  "type": "arrive"
+ }
+]

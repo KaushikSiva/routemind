@@ -1,0 +1,13 @@
+{
+ "start": [
+  37.7955487,
+  -122.3934746
+ ],
+ "goal": [
+  37.7561513,
+  -122.510185
+ ],
+ "start_label": "Shack 15",
+ "goal_label": "Ocean Beach",
+ "city": "San Francisco"
+}
