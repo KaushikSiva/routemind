@@ -13,7 +13,7 @@
 
 ## ▶ Live demo
 
-**Interactive app:** https://tets-mv4eiaze9dc-prod.cloud.modelence.app
+**Interactive app:** https://tets-mv4eiaze9dc-prod.cloud.modelence.app &nbsp;·&nbsp; **Pitch video (37s):** [docs/demo.mp4](docs/demo.mp4)
 
 Type any start and destination, press **Drive**, and watch the memory learn the route trip by trip.
 A **Pitch** tab tells the story. Deployed on Modelence, reading MongoDB Atlas live.
