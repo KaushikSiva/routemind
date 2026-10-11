@@ -103,6 +103,12 @@ function makeBank(decisions: Decision[], goal: string, vmap: Map<string, number[
     const name = pick(STREETS); const jid = 1000 + j; const doc = jdoc(jid, name, goal);
     for (let k = 0; k < 6; k++) bank.push(base(jid, name, doc, pick(ACTIONS), false, true));
   }
+  // shuffle so the first-recalled turn at each junction is random (often wrong) — this is what
+  // gives RAG something to get stuck on and RouteMind something to learn and forget.
+  for (let i = bank.length - 1; i > 0; i--) {
+    const k = Math.floor(rng() * (i + 1));
+    [bank[i], bank[k]] = [bank[k], bank[i]];
+  }
   return bank;
 }
 
