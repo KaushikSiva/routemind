@@ -11,6 +11,23 @@
 
 ---
 
+## ▶ Live demo
+
+**Interactive app:** https://tets-mv4eiaze9dc-prod.cloud.modelence.app
+
+Type any start and destination, press **Drive**, and watch the memory learn the route trip by trip.
+A **Pitch** tab tells the story. Deployed on Modelence, reading MongoDB Atlas live.
+
+**Built on:** [MongoDB Atlas](https://www.mongodb.com/atlas) (Vector Search) ·
+[Voyage AI](https://www.voyageai.com) (embeddings) · [Raindrop](https://www.raindrop.ai) (observability) ·
+[Modelence](https://modelence.com) (hosting) · [ElevenLabs](https://elevenlabs.io) (narration) ·
+OpenStreetMap (routes). The deployed app source is in [`dashboard/`](dashboard).
+
+For judges: [SUBMISSION.md](SUBMISSION.md) (MongoDB write-up), [SPONSORS.md](SPONSORS.md) (integrations),
+[ATLAS_DEMO.md](ATLAS_DEMO.md) (show it live in the Atlas console).
+
+---
+
 ## Watch it learn
 
 <p align="center">
@@ -24,19 +41,19 @@
 |---|---|---|
 | ![lost](docs/trip_lost.png) | ![mid](docs/trip_mid.png) | ![arrived](docs/trip_arrived.png) |
 
-Run on **MongoDB Atlas Vector Search over 1,081 turn-memories** (33 correct, 1,048 noise — of which
-960 are decoy turns from 160 other San Francisco junctions the search has to sift through):
+Run on **MongoDB Atlas Vector Search over 1,081 turn-memories** (33 correct, 1,048 noise, of which
+960 are decoy turns from 160 other San Francisco junctions the search has to sift through), with
+embeddings from **Voyage AI** (voyage-3.5, 1024-d):
 
 ```
- trip | turns right | result              || RAG (frozen memory)
-   1  |   5/11      | lost @ junction 1    ||  6/11  lost @ junction 0
-   2  |   9/11      | lost @ junction 4    ||  6/11  lost @ junction 0
-   3  |  10/11      | lost @ junction 5    ||  6/11  lost @ junction 0
-   4  |  11/11      | ARRIVES ✅            ||  6/11  still lost
+ trip | turns right | result            || RAG (frozen memory)
+   1  |   3/11      | lost early         ||  2/11  lost at the first turn
+   3  |   8/11      | most of the way    ||  2/11  lost at the first turn
+   5  |  11/11      | ARRIVES            ||  2/11  still lost
 ```
 
-The car (RouteMind) **arrives by trip 4**. A frozen-memory baseline (RAG) — same 1,081 memories, no
-learning — **never gets past the first turn.** That's the whole point: same vectors, the only
+The car (RouteMind) **arrives by trip 5**. A frozen-memory baseline (RAG), the same 1,081 memories
+with no learning, **never gets past the first turn.** That is the whole point: same vectors, the only
 difference is that RouteMind *learns which memories help and forgets the ones that mislead*.
 
 ## Try it on localhost 🖥️
@@ -106,14 +123,18 @@ ROUTEMIND_ROUTE=sf python run_nav.py --atlas    # pick the route with the env va
 Ships with two: **`sf`** (Shack 15 → Ocean Beach, default) and **`chennai`** (Kodambakkam station →
 Jains Antariksha) — proof it's the *memory* learning, not a route baked into the code.
 
-## Credits
+## Sponsors and partners
 
-- **OpenStreetMap** — the road network · **Nominatim** (geocoding) · **OSRM** (routing) ·
-  **staticmap** (tiles) · **Leaflet** (the live map) · **Chart.js** (the live curve).
-- Memory engine (`memory.py`) is the **Mnemo** self-improving memory: usefulness-weighted recall +
-  forgetting on a vector store (local or **MongoDB Atlas**).
-- Everything else (`nav_tasks.py`, `run_nav.py`, `render_nav.py`, `build_route.py`, `graph.py`,
-  `app.py`) written for this project.
+- **MongoDB Atlas Vector Search** is the recall engine and the durable, self-evolving memory.
+- **Voyage AI** (voyage-3.5, 1024-d, via MongoDB's hosted endpoint) generates the embeddings.
+- **Raindrop** streams every recall as an AI interaction, so the self-improvement is observable (`raindrop.py`).
+- **Modelence** hosts the deployed dashboard (`dashboard/`), which reads the same Atlas cluster live.
+- **ElevenLabs** narrates the dashboard.
+- **OpenStreetMap** (Nominatim geocoding, OSRM routing), with **staticmap**, **Leaflet**, and **Chart.js** for the maps and charts.
+
+Everything in this repo (`memory.py`, `nav_tasks.py`, `run_nav.py`, `render_nav.py`, `build_route.py`,
+`graph.py`, `app.py`, `seed_atlas_demo.py`, `atlas_pipeline.py`, `recreate_index.py`, and the Modelence
+`dashboard/`) was written for this project.
 
 ---
 

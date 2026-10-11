@@ -10,17 +10,46 @@ So the same store gets measurably better the more it's used.
 Two backends, one interface: LocalStore (dev, numpy cosine) and AtlasStore
 (MongoDB Atlas $vectorSearch — required for the hackathon submission).
 """
+import json
 import os
+import urllib.request
 
 import numpy as np
-from openai import OpenAI
 
-_client = OpenAI()
-EMBED_MODEL = "text-embedding-3-small"
-DIM = 1536
+# Embeddings: prefer Voyage AI (the hackathon's retrieval partner) via MongoDB's hosted Voyage
+# endpoint when VOYAGE_API_KEY is set; otherwise fall back to OpenAI.
+_VOYAGE_KEY = os.environ.get("VOYAGE_API_KEY")
+if _VOYAGE_KEY:
+    EMBED_PROVIDER = "voyage"
+    EMBED_MODEL = os.environ.get("VOYAGE_MODEL", "voyage-3.5")
+    _VOYAGE_URL = os.environ.get("VOYAGE_ENDPOINT", "https://ai.mongodb.com").rstrip("/") + "/v1/embeddings"
+    DIM = 1024
+else:
+    from openai import OpenAI
+    EMBED_PROVIDER = "openai"
+    _client = OpenAI()
+    EMBED_MODEL = "text-embedding-3-small"
+    DIM = 1536
+
+
+def _voyage_embed(texts, input_type=None):
+    out = []
+    for i in range(0, len(texts), 128):                 # Voyage batches; stay well under limits
+        chunk = texts[i:i + 128]
+        payload = {"model": EMBED_MODEL, "input": chunk}
+        if input_type:
+            payload["input_type"] = input_type
+        req = urllib.request.Request(_VOYAGE_URL, data=json.dumps(payload).encode(),
+                                     headers={"Authorization": f"Bearer {_VOYAGE_KEY}",
+                                              "Content-Type": "application/json"})
+        d = json.load(urllib.request.urlopen(req, timeout=60))
+        out.extend(row["embedding"] for row in sorted(d["data"], key=lambda r: r["index"]))
+    return out
 
 
 def embed(texts):
+    if EMBED_PROVIDER == "voyage":
+        return _voyage_embed(texts)
     r = _client.embeddings.create(model=EMBED_MODEL, input=texts)
     return [d.embedding for d in r.data]
 

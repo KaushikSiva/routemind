@@ -1,0 +1,16 @@
+{
+  "$schema": "https://cloud.modelence.com/schema/modelence.config.json?version=1",
+  "resources": {
+    "api": {
+      "type": "service",
+      "image": "node-22-slim",
+      "build": { "commands": ["npm ci", "npm run build"] },
+      "start": { "commands": ["npm run start"] }
+    }
+  },
+  "env": {
+    "ROUTEMIND_MONGODB_URI": { "type": "secret" },
+    "VOYAGE_API_KEY": { "type": "secret" },
+    "ELEVENLABS_API_KEY": { "type": "secret" }
+  }
+}

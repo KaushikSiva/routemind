@@ -43,6 +43,14 @@ for r in range(args.rounds):
 col = store.col
 remaining = col.count_documents({})
 touched = list(col.find({"uses": {"$gt": 0}}).sort("usefulness", -1))
+
+import datetime
+store.c["mnemo"]["demo_meta"].replace_one({"_id": ROUTE}, {   # headline numbers for the dashboard
+    "_id": ROUTE, "route": ROUTE, "start_label": START_LABEL, "goal_label": GOAL_LABEL,
+    "n_junctions": len(DECISIONS), "seeded": seeded, "remaining": remaining,
+    "forgotten": seeded - remaining, "used": len(touched),
+    "updatedAt": datetime.datetime.utcnow().isoformat() + "Z",
+}, upsert=True)
 print(f"\n✅ Atlas now holds the LEARNED memory for: {START_LABEL} → {GOAL_LABEL}")
 print(f"   vectors: {seeded:,} seeded  →  {remaining:,} remaining  ({seeded - remaining} wrong turns FORGOTTEN / deleted)")
 print(f"   memories the agent actually used (uses>0): {len(touched)}")
