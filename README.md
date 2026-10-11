@@ -41,9 +41,10 @@ difference is that RouteMind *learns which memories help and forgets the ones th
 
 ## Try it on localhost 🖥️
 
-An interactive dashboard: press **Drive** and watch the car learn the route live on the map while the
-self-improvement curve fills in. Flip **learning off** to watch plain RAG stay lost. The engine runs
-for real on every click.
+An interactive dashboard. **Type any start and destination** — RouteMind builds the real
+OpenStreetMap route live, then press **Drive** and watch the car learn it trip by trip on the map
+while the self-improvement curve fills in. Flip **learning off** to watch plain RAG stay lost. The
+engine runs for real on every click.
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
@@ -52,6 +53,9 @@ pip install -r requirements.txt
 
 python app.py          # → open http://localhost:5050
 ```
+
+Try *Golden Gate Bridge → Oracle Park*, *Shack 15 → Ocean Beach*, or anywhere you like — each becomes
+a fresh memory store (1,000+ vectors) the car has to learn its way through.
 
 ## How it works
 

@@ -54,40 +54,51 @@ _POOLS = {
 _STREETS = _POOLS.get(CITY, _POOLS["Chennai"])
 
 
+# A neutral street pool for routes built on the fly (any city) — decoys only.
+_GENERIC = sorted(set(_POOLS["Chennai"] + _POOLS["San Francisco"]))
+
+
+def jdoc(i, on, goal_label):
+    return f"Junction {i} on {on}: which way to continue toward {goal_label}?"
+
+
 def junction_doc(i, d):
-    return f"Junction {i} on {d['on']}: which way to continue toward {GOAL_LABEL}?"
+    return jdoc(i, d["on"], GOAL_LABEL)
 
 
-def junction_doc_for(name, i):
-    return f"Junction {i} on {name}: which way to continue toward {GOAL_LABEL}?"
-
-
-def make_bank(correct_per=3, noise_per=8, distractor_junctions=160, distractor_per=6, seed=1):
+def make_bank_for(decisions, goal_label, streets=None, correct_per=3, noise_per=8,
+                  distractor_junctions=160, distractor_per=6, seed=1):
     """
-    The real route: per junction, correct-turn memories + noisy (wrong-turn) memories.
-    Plus `distractor_junctions` fake junctions all over the city (scale) — so recall has to
-    pick this junction's turns out of a store of thousands. They carry junction ids >=1000
-    and are filtered out by junction-scoped recall, so they only stress the vector search.
+    Build the memory store for ANY route's decisions. Per real junction: correct-turn memories
+    + noisy (wrong-turn) memories. Plus `distractor_junctions` fake junctions all over the city
+    (scale) — junction ids >=1000, filtered out by junction-scoped recall, so they only stress
+    the vector search.
     """
+    streets = streets or _GENERIC
     rng = random.Random(seed)
     bank = []
-    for i, d in enumerate(DECISIONS):
+    for i, d in enumerate(decisions):
         correct = d["action"] if d["action"] in ACTIONS else "straight"
-        doc = junction_doc(i, d)
+        doc = jdoc(i, d["on"], goal_label)
         for _ in range(correct_per):
             bank.append({"junction": i, "on": d["on"], "document": doc, "action": correct, "truth": True})
         wrongs = [a for a in ACTIONS if a != correct]
         for _ in range(noise_per):
             bank.append({"junction": i, "on": d["on"], "document": doc, "action": rng.choice(wrongs), "truth": False})
     for j in range(distractor_junctions):
-        name = rng.choice(_STREETS)
+        name = rng.choice(streets)
         jid = 1000 + j
-        doc = junction_doc_for(name, jid)
+        doc = jdoc(jid, name, goal_label)
         for _ in range(distractor_per):
             bank.append({"junction": jid, "on": name, "document": doc,
                          "action": rng.choice(ACTIONS), "truth": False, "distractor": True})
     rng.shuffle(bank)
     return bank
+
+
+def make_bank(**kw):
+    """The default route's store (uses the module-level DECISIONS / GOAL_LABEL / city pool)."""
+    return make_bank_for(DECISIONS, GOAL_LABEL, _STREETS, **kw)
 
 
 if __name__ == "__main__":
