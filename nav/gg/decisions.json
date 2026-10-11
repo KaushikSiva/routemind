@@ -1,0 +1,173 @@
+[
+ {
+  "on": "Golden Gate Bridge",
+  "loc": [
+   -122.478252,
+   37.81665
+  ],
+  "action": "straight",
+  "type": "depart"
+ },
+ {
+  "on": "Presidio Parkway",
+  "loc": [
+   -122.475658,
+   37.807167
+  ],
+  "action": "straight",
+  "type": "new name"
+ },
+ {
+  "on": "Presidio Parkway",
+  "loc": [
+   -122.472363,
+   37.804313
+  ],
+  "action": "left",
+  "type": "fork"
+ },
+ {
+  "on": "Richardson Avenue",
+  "loc": [
+   -122.448053,
+   37.80095
+  ],
+  "action": "straight",
+  "type": "new name"
+ },
+ {
+  "on": "Lombard Street",
+  "loc": [
+   -122.444714,
+   37.798758
+  ],
+  "action": "left",
+  "type": "new name"
+ },
+ {
+  "on": "Divisadero Street",
+  "loc": [
+   -122.442657,
+   37.798962
+  ],
+  "action": "right",
+  "type": "turn"
+ },
+ {
+  "on": "California Street",
+  "loc": [
+   -122.440464,
+   37.788089
+  ],
+  "action": "left",
+  "type": "turn"
+ },
+ {
+  "on": "Webster Street",
+  "loc": [
+   -122.432209,
+   37.789119
+  ],
+  "action": "right",
+  "type": "turn"
+ },
+ {
+  "on": "Oak Street",
+  "loc": [
+   -122.429195,
+   37.774187
+  ],
+  "action": "left",
+  "type": "turn"
+ },
+ {
+  "on": "Octavia Boulevard",
+  "loc": [
+   -122.42421,
+   37.774821
+  ],
+  "action": "right",
+  "type": "turn"
+ },
+ {
+  "on": "unnamed road",
+  "loc": [
+   -122.423485,
+   37.771918
+  ],
+  "action": "straight",
+  "type": "new name"
+ },
+ {
+  "on": "Central Freeway",
+  "loc": [
+   -122.416413,
+   37.769585
+  ],
+  "action": "straight",
+  "type": "new name"
+ },
+ {
+  "on": "unnamed road",
+  "loc": [
+   -122.409408,
+   37.769096
+  ],
+  "action": "left",
+  "type": "off ramp"
+ },
+ {
+  "on": "Route 80",
+  "loc": [
+   -122.405725,
+   37.77095
+  ],
+  "action": "straight",
+  "type": "new name"
+ },
+ {
+  "on": "unnamed road",
+  "loc": [
+   -122.401613,
+   37.777839
+  ],
+  "action": "right",
+  "type": "off ramp"
+ },
+ {
+  "on": "4th Street",
+  "loc": [
+   -122.398144,
+   37.779529
+  ],
+  "action": "right",
+  "type": "turn"
+ },
+ {
+  "on": "4th Street",
+  "loc": [
+   -122.393404,
+   37.77573
+  ],
+  "action": "left",
+  "type": "continue"
+ },
+ {
+  "on": "King Street",
+  "loc": [
+   -122.393835,
+   37.776306
+  ],
+  "action": "right",
+  "type": "turn"
+ },
+ {
+  "on": "King Street",
+  "loc": [
+   -122.390214,
+   37.779171
+  ],
+  "action": "right",
+  "type": "arrive"
+ }
+]

@@ -1,0 +1,13 @@
+{
+ "start": [
+  37.8166502,
+  -122.4782518
+ ],
+ "goal": [
+  37.7786059,
+  -122.3894716
+ ],
+ "start_label": "Golden Gate Bridge",
+ "goal_label": "Oracle Park",
+ "city": "San Francisco"
+}
